@@ -17,7 +17,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className="h-full bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-300"
+      className="h-full bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-300 overflow-clip"
     >
       <head>
         <link
@@ -25,7 +25,11 @@ export default function RootLayout({
           href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%2210 0 100 100%22><text y=%22.90em%22 font-size=%2290%22>🐀</text></svg>"
         ></link>
       </head>
-      <body className={`${inter.className} h-full`}>{children}</body>
+      <body
+        className={`${inter.className} h-full w-full fixed bottom-0 transition-all`}
+      >
+        {children}
+      </body>
     </html>
   );
 }

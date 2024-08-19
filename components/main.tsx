@@ -1,5 +1,6 @@
 "use client";
 
+import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { useEffect, useState, useMemo } from "react";
 import Trie from "mnemonist/trie";
 import Entry, { EntryData } from "./entry";
@@ -42,6 +43,17 @@ export default function Main({
   data: string;
   ranked: string;
 }): React.ReactElement {
+  // This is an ugly hack because iOS sucks
+  useEffect(() => {
+    const { visualViewport } = window;
+    if (visualViewport) {
+      visualViewport.addEventListener("resize", () => {
+        document.body.style.height = `${visualViewport.height}px`;
+      });
+    }
+  }, []);
+
+  const [animationParent] = useAutoAnimate();
   const ranks = useMemo(() => {
     const ranks = new Map<string, number>();
     for (const [i, word] of ranked.split("\n").entries()) {
@@ -103,7 +115,10 @@ export default function Main({
 
   return (
     <div className="flex flex-col grow basis-0 gap-y-2 text-lg">
-      <div className="flex flex-col-reverse grow basis-0 gap-y-2 overflow-y-scroll">
+      <div
+        className="flex flex-col-reverse grow basis-0 gap-y-2 overflow-y-scroll"
+        ref={animationParent}
+      >
         {results.map((res) => (
           <Entry key={res.word} {...res} />
         ))}
