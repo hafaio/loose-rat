@@ -87,7 +87,11 @@ export default function Main({
       for (const prefixed of ipaPrefix.find(ipa)) {
         if (ipaToWords.has(prefixed.slice(ipa.length))) {
           for (const [longer] of ipaToWords.get(prefixed)!) {
-            res.set(longer, { word: longer, ipa: prefixed });
+            res.set(longer, {
+              word: longer,
+              ipa: prefixed,
+              rank: ranks.get(longer),
+            });
           }
         }
       }
@@ -98,16 +102,18 @@ export default function Main({
         if (ipaToWords.has(prefix)) {
           const suffixed = [...revSuffixed].reverse().join("");
           for (const [longer] of ipaToWords.get(suffixed)!) {
-            res.set(longer, { word: longer, ipa: suffixed });
+            res.set(longer, {
+              word: longer,
+              ipa: suffixed,
+              rank: ranks.get(longer),
+            });
           }
         }
       }
     }
     setResults(
       [...res.values()].sort(
-        (left, right) =>
-          (ranks.get(left.word) ?? ranks.size) -
-          (ranks.get(right.word) ?? ranks.size),
+        (left, right) => (left.rank ?? ranks.size) - (right.rank ?? ranks.size),
       ),
     );
     setIpa([...ipas].join(" · "));
@@ -116,7 +122,7 @@ export default function Main({
   return (
     <div className="flex flex-col grow basis-0 gap-y-2 text-lg">
       <div
-        className="flex flex-col-reverse grow basis-0 gap-y-2 overflow-y-scroll"
+        className="flex flex-col-reverse grow basis-0 gap-y-2 overflow-y-auto overscroll-none"
         ref={animationParent}
       >
         {results.map((res) => (
@@ -128,6 +134,7 @@ export default function Main({
           className="grow outline-none bg-transparent pl-1"
           value={search}
           onChange={(evt) => setSearch(evt.target.value)}
+          onKeyDown={(evt) => evt.key === "Enter" && evt.currentTarget.blur()}
           placeholder="enter word..."
         />
         <span className="text-slate-400 dark:text-slate-600">{ipa}</span>
