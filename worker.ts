@@ -1,7 +1,7 @@
 import { Query, EntryData, Result } from "./utils/types";
 import Trie from "mnemonist/trie";
 
-const MAX_RESULTS = 100;
+const MAX_RESULTS = 200;
 const CACHE_SIZE = 3;
 
 interface RawData {
