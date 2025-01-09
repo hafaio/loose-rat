@@ -48,7 +48,7 @@ export default function Search(): React.ReactElement {
   }, [dialects]);
 
   // initialize worker
-  const workerRef = useRef<Worker>();
+  const workerRef = useRef<Worker>(null);
   useEffect(() => {
     workerRef.current = new Worker(new URL("../worker.ts", import.meta.url), {
       type: "module",

@@ -12,24 +12,24 @@
   "dependencies": {
     "@formkit/auto-animate": "^0.8.2",
     "mnemonist": "^0.39.8",
-    "next": "15.0.2",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "react-icons": "^5.3.0"
+    "next": "15.1.4",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-icons": "^5.4.0"
   },
   "devDependencies": {
     "@ethereumjs/trie": "^6.2.1",
-    "@types/bun": "^1.1.12",
-    "@types/node": "^22.8.6",
-    "@types/react": "^18.3.12",
-    "@types/react-dom": "^18.3.1",
-    "eslint": "^9.14.0",
-    "eslint-config-next": "15.0.2",
-    "postcss": "^8.4.47",
-    "prettier": "^3.3.3",
+    "@types/bun": "^1.1.16",
+    "@types/node": "^22.10.5",
+    "@types/react": "^19.0.4",
+    "@types/react-dom": "^19.0.2",
+    "eslint": "^9.17.0",
+    "eslint-config-next": "15.1.4",
+    "postcss": "^8.4.49",
+    "prettier": "^3.4.2",
     "prettier-plugin-organize-imports": "^4.1.0",
-    "tailwindcss": "^3.4.14",
+    "tailwindcss": "^3.4.17",
     "trie-search": "^2.1.0",
-    "typescript": "^5.6.3"
+    "typescript": "^5.7.3"
   }
 }
