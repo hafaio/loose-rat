@@ -1,12 +1,12 @@
-import Mnemonist from "mnemonist/trie";
+import { Trie as Mnemonist } from "mnemonist";
 import { expect, test, describe } from "bun:test";
 import { readFile } from "fs/promises";
 import TrieSearch from "trie-search";
 import { Trie } from "@ethereumjs/trie";
-import { bytesToUtf8, MapDB, utf8ToBytes } from "@ethereumjs/util";
+import { MapDB, utf8ToBytes } from "@ethereumjs/util";
 
 describe("trie timing", async () => {
-  const rawData = await readFile("./public/word_to_ipas.json", "utf8");
+  const rawData = await readFile("./public/loose_rat_inputs.json", "utf8");
   const { word_to_ipas } = JSON.parse(rawData);
   const ipas = new Set<string>();
   for (const word in word_to_ipas) {

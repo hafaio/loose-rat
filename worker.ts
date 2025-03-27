@@ -1,5 +1,5 @@
 import { Query, EntryData, Result } from "./utils/types";
-import Trie from "mnemonist/trie";
+import { Trie } from "mnemonist";
 
 const MAX_RESULTS = 200;
 const CACHE_SIZE = 3;
@@ -33,11 +33,7 @@ async function load(): Promise<RawData> {
     dialectRegexes.set(dialect, arr);
   }
 
-  return {
-    baseIpas: word_to_ipas,
-    popularity,
-    dialectRegexes,
-  };
+  return { baseIpas: word_to_ipas, popularity, dialectRegexes };
 }
 
 const dataProm = load();
