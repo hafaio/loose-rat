@@ -1,5 +1,4 @@
 import Search from "../components/search";
-import { readFile } from "fs/promises";
 
 export default function Home(): React.ReactElement {
   return (

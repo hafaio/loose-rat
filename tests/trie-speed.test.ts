@@ -1,20 +1,19 @@
-import { Trie as Mnemonist } from "mnemonist";
-import { expect, test, describe } from "bun:test";
-import { readFile } from "fs/promises";
-import TrieSearch from "trie-search";
+import { describe, expect, test } from "bun:test";
 import { Trie } from "@ethereumjs/trie";
 import { MapDB, utf8ToBytes } from "@ethereumjs/util";
+import { Trie as Mnemonist } from "mnemonist";
+import TrieSearch from "trie-search";
 
 describe("trie timing", async () => {
-  const rawData = await readFile("./public/loose_rat_inputs.json", "utf8");
-  const { word_to_ipas } = JSON.parse(rawData);
+  const { word_to_ipas } = await Bun.file(
+    "./public/loose_rat_inputs.json",
+  ).json();
   const ipas = new Set<string>();
   for (const word in word_to_ipas) {
     for (const ipa in word_to_ipas[word]) {
       ipas.add(ipa);
     }
   }
-  const [arb] = ipas;
 
   test("mnemonist", () => {
     const trie = new Mnemonist<string>();
@@ -46,7 +45,7 @@ describe("trie timing", async () => {
   test("etherium", async () => {
     const trie = await Trie.create({ db: new MapDB() });
     for (const ipa of ipas) {
-      const bytes = utf8ToBytes("test");
+      const bytes = utf8ToBytes(ipa);
       await trie.put(bytes, bytes);
     }
   });

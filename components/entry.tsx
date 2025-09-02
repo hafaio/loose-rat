@@ -1,4 +1,4 @@
-import { EntryData } from "../utils/types";
+import type { EntryData } from "../utils/types";
 
 export default function Entry({
   word,
