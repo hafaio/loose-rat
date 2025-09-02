@@ -1,5 +1,5 @@
-import { Query, EntryData, Result } from "./utils/types";
 import { Trie } from "mnemonist";
+import type { EntryData, Query, Result } from "./utils/types";
 
 const MAX_RESULTS = 200;
 const CACHE_SIZE = 3;
@@ -13,7 +13,7 @@ interface RawData {
 async function load(): Promise<RawData> {
   // load raw data
   const resp = await fetch(
-    new URL("public/loose_rat_inputs.json", import.meta.url)
+    new URL("public/loose_rat_inputs.json", import.meta.url),
   );
   const { word_to_ipas, popularity, dialects } = await resp.json();
 
@@ -24,7 +24,7 @@ async function load(): Promise<RawData> {
     const arr: [RegExp, string][] = [];
     for (const rep in mapping) {
       const base = [...mapping[rep], rep].sort((a, b) =>
-        a.length == b.length ? a.localeCompare(b) : b.length - a.length
+        a.length === b.length ? a.localeCompare(b) : b.length - a.length,
       );
       const replace = base.pop() ?? "";
       const reg = base.map((v) => `(${v})`).join("|");
@@ -50,7 +50,7 @@ const indexMap = new Map<string, Indices>();
 function getIndices(
   selectedDialects: readonly string[],
   baseIpas: Record<string, readonly string[]>,
-  dialectRegexes: Map<string, readonly [RegExp, string][]>
+  dialectRegexes: Map<string, readonly [RegExp, string][]>,
 ): Indices {
   const key = JSON.stringify(selectedDialects.toSorted());
   const res = indexMap.get(key);
@@ -107,7 +107,7 @@ addEventListener("message", async (event: MessageEvent<Query>) => {
   const { wordToIpas, ipaToWords, ipaPrefix, ipaSuffix } = getIndices(
     dialects,
     baseIpas,
-    dialectRegexes
+    dialectRegexes,
   );
 
   const res = new Map<string, EntryData>();

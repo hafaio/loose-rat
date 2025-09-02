@@ -144,6 +144,7 @@ export default function DialectMenu({
         <button
           className="bg-slate-400 dark:bg-slate-600 rounded-lg p-1"
           onClick={() => setOpen(false)}
+          type="button"
         >
           Close
         </button>

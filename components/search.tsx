@@ -1,11 +1,11 @@
 "use client";
 
 import { useAutoAnimate } from "@formkit/auto-animate/react";
-import { useEffect, useState, useMemo, useRef, useCallback } from "react";
-import Entry from "./entry";
-import { CgSpinner, CgMenu } from "react-icons/cg";
-import { Query, Result, EntryData } from "../utils/types";
+import { useEffect, useRef, useState } from "react";
+import { CgMenu, CgSpinner } from "react-icons/cg";
+import type { EntryData, Query, Result } from "../utils/types";
 import DialectMenu from "./dialect-menu";
+import Entry from "./entry";
 
 const DIALECT_KEY = "dialects";
 
@@ -59,11 +59,11 @@ export default function Search(): React.ReactElement {
   }, []);
   useEffect(() => {
     const listener = (event: MessageEvent<Result>) => {
-      const { dialects, query, results, ipa } = event.data;
+      const { dialects: edialects, query, results, ipa } = event.data;
       if (
         query === search &&
-        dialects.length === dialects.length &&
-        dialects.every((d, i) => d === dialects[i])
+        dialects.size === edialects.length &&
+        edialects.every((d) => dialects.has(d))
       ) {
         setResults(results);
         setIpa(ipa);
@@ -117,7 +117,11 @@ export default function Search(): React.ReactElement {
             />
             {tail}
           </div>
-          <button className="text-2xl" onClick={() => setMenuOpen(true)}>
+          <button
+            className="text-2xl"
+            onClick={() => setMenuOpen(true)}
+            type="button"
+          >
             <CgMenu />
           </button>
         </div>
