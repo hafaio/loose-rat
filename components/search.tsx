@@ -50,7 +50,7 @@ export default function Search(): React.ReactElement {
   // initialize worker
   const workerRef = useRef<Worker>(null);
   useEffect(() => {
-    workerRef.current = new Worker(new URL("../worker.ts", import.meta.url), {
+    workerRef.current = new Worker(new URL("./worker.ts", import.meta.url), {
       type: "module",
     });
     return () => {
