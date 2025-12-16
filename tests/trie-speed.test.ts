@@ -6,7 +6,7 @@ import TrieSearch from "trie-search";
 
 describe("trie timing", async () => {
   const { word_to_ipas } = await Bun.file(
-    "./public/loose_rat_inputs.json",
+    "./components/loose_rat_inputs.json",
   ).json();
   const ipas = new Set<string>();
   for (const word in word_to_ipas) {

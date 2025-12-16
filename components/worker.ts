@@ -1,5 +1,5 @@
 import { Trie } from "mnemonist";
-import type { EntryData, Query, Result } from "./utils/types";
+import type { EntryData, Query, Result } from "../utils/types";
 
 const MAX_RESULTS = 200;
 const CACHE_SIZE = 3;
@@ -12,10 +12,11 @@ interface RawData {
 
 async function load(): Promise<RawData> {
   // load raw data
-  const resp = await fetch(
-    new URL("public/loose_rat_inputs.json", import.meta.url),
-  );
-  const { word_to_ipas, popularity, dialects } = await resp.json();
+  const { word_to_ipas, popularity, dialects } = await import("./loose_rat_inputs.json") as unknown as  {
+    word_to_ipas: Record<string, string[]>;
+    popularity: Record<string, number>;
+    dialects: Record<string, Record<string, string[]>>;
+  };
 
   // parse dialects into regexes
   const dialectRegexes = new Map<string, [RegExp, string][]>();
