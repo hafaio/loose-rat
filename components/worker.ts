@@ -12,7 +12,6 @@ interface RawData {
 }
 
 async function load(): Promise<RawData> {
-  // load raw data
   const { word_to_ipas, popularity, dialects } = await import("./loose_rat_inputs.json") as unknown as  {
     word_to_ipas: Record<string, string[]>;
     popularity: Record<string, number>;
