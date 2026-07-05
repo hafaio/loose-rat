@@ -1,7 +1,7 @@
 "use client";
 
 import { useAutoAnimate } from "@formkit/auto-animate/react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { CgMenu, CgSpinner } from "react-icons/cg";
 import type { EntryData, Query, Result } from "../utils/types";
 import DialectMenu from "./dialect-menu";
@@ -26,6 +26,7 @@ export default function Search(): React.ReactElement {
   // selected dialects and other states
   const [dialects, setDialects] = useState(new Set<string>());
   const [searching, setSearching] = useState(false);
+  const [failed, setFailed] = useState(false);
   const [search, setSearch] = useState("");
   const [ipa, setIpa] = useState("");
   const [results, setResults] = useState<readonly EntryData[]>([]);
@@ -47,51 +48,84 @@ export default function Search(): React.ReactElement {
     localStorage.setItem(DIALECT_KEY, JSON.stringify([...dialects]));
   }, [dialects]);
 
-  // initialize worker
+  // a dead worker caches its rejected data-load promise, so recovery means a fresh one
   const workerRef = useRef<Worker>(null);
-  useEffect(() => {
+  const spawnWorker = useCallback(() => {
+    workerRef.current?.terminate();
     workerRef.current = new Worker(new URL("./worker.ts", import.meta.url), {
       type: "module",
     });
-    return () => {
-      workerRef.current?.terminate();
-    };
   }, []);
   useEffect(() => {
-    const listener = (event: MessageEvent<Result>) => {
-      const { dialects: edialects, query, results, ipa } = event.data;
-      if (
-        query === search &&
-        dialects.size === edialects.length &&
-        edialects.every((d) => dialects.has(d))
-      ) {
-        setResults(results);
-        setIpa(ipa);
-        setSearching(false);
-      }
-    };
-    workerRef.current?.addEventListener("message", listener);
-    return () => {
-      workerRef.current?.removeEventListener("message", listener);
-    };
-  }, [search, dialects]);
+    spawnWorker();
+    return () => workerRef.current?.terminate();
+  }, [spawnWorker]);
 
+  // dispatch each query and listen for its result on the current worker
   useEffect(() => {
     // if we have the menu open, don't search
     if (menuOpen) return;
+    const worker = workerRef.current;
+    if (!worker) return;
 
-    const query: Query = { dialects: [...dialects], query: search };
+    // respawn but don't repost — the next query retries, so a broken worker can't loop
+    const onFailure = () => {
+      setSearching(false);
+      setFailed(true);
+      spawnWorker();
+    };
+    const onResult = (event: MessageEvent<Result>) => {
+      const { dialects: edialects, query, results, ipa, error } = event.data;
+      // ignore results for a query or dialect set we've since moved past
+      if (
+        query !== search ||
+        edialects.length !== dialects.size ||
+        !edialects.every((dialect) => dialects.has(dialect))
+      ) {
+        return;
+      }
+      setSearching(false);
+      if (error) {
+        onFailure();
+      } else {
+        setResults(results);
+        setIpa(ipa);
+      }
+    };
+
+    worker.addEventListener("message", onResult);
+    worker.addEventListener("error", onFailure);
+    worker.addEventListener("messageerror", onFailure);
+
     setResults([]);
     setIpa("");
+    setFailed(false);
     setSearching(true);
-    workerRef.current?.postMessage(query);
-  }, [search, dialects, menuOpen]);
+    const query: Query = { dialects: [...dialects], query: search };
+    worker.postMessage(query);
 
-  const tail = searching ? (
-    <CgSpinner className="animate-spin mt-auto mb-auto" />
-  ) : (
-    <span className="text-slate-400 dark:text-slate-600">{ipa}</span>
-  );
+    return () => {
+      worker.removeEventListener("message", onResult);
+      worker.removeEventListener("error", onFailure);
+      worker.removeEventListener("messageerror", onFailure);
+    };
+  }, [search, dialects, menuOpen, spawnWorker]);
+
+  let tail: React.ReactElement;
+  if (failed) {
+    tail = (
+      <span
+        className="text-red-500 dark:text-red-400 text-sm mt-auto mb-auto"
+        title="search failed — keep typing to retry"
+      >
+        error
+      </span>
+    );
+  } else if (searching) {
+    tail = <CgSpinner className="animate-spin mt-auto mb-auto" />;
+  } else {
+    tail = <span className="text-slate-400 dark:text-slate-600">{ipa}</span>;
+  }
 
   return (
     <div className="grow basis-0">
