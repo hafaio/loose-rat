@@ -1,5 +1,6 @@
-import { Trie } from "mnemonist";
+import { Trie, TrieMap } from "mnemonist";
 import type { EntryData, Query, Result } from "../utils/types";
+import { buildSubstitution } from "./dialects";
 
 const MAX_RESULTS = 200;
 const CACHE_SIZE = 3;
@@ -7,7 +8,7 @@ const CACHE_SIZE = 3;
 interface RawData {
   baseIpas: Record<string, readonly string[]>;
   popularity: Record<string, number>;
-  dialectRegexes: Map<string, readonly [RegExp, string][]>;
+  dialectRules: Record<string, Record<string, string[]>>;
 }
 
 async function load(): Promise<RawData> {
@@ -18,31 +19,16 @@ async function load(): Promise<RawData> {
     dialects: Record<string, Record<string, string[]>>;
   };
 
-  // parse dialects into regexes
-  const dialectRegexes = new Map<string, [RegExp, string][]>();
-  for (const dialect in dialects) {
-    const mapping = dialects[dialect];
-    const arr: [RegExp, string][] = [];
-    for (const rep in mapping) {
-      const base = [...mapping[rep], rep].sort((a, b) =>
-        a.length === b.length ? a.localeCompare(b) : b.length - a.length,
-      );
-      const replace = base.pop() ?? "";
-      const reg = base.map((v) => `(${v})`).join("|");
-      arr.push([new RegExp(reg, "g"), replace]);
-    }
-    dialectRegexes.set(dialect, arr);
-  }
-
-  return { baseIpas: word_to_ipas, popularity, dialectRegexes };
+  return { baseIpas: word_to_ipas, popularity, dialectRules: dialects };
 }
 
 const dataProm = load();
 
 interface Indices {
   wordToIpas: Map<string, string[]>;
-  ipaToWords: Map<string, string[]>;
-  ipaPrefix: Trie<string>;
+  // canonical ipa -> words with that pronunciation, keyed as a prefix trie
+  ipaToWords: TrieMap<string, string[]>;
+  // reversed canonical ipas, for suffix lookups
   ipaSuffix: Trie<string>;
 }
 
@@ -51,7 +37,7 @@ const indexMap = new Map<string, Indices>();
 function getIndices(
   selectedDialects: readonly string[],
   baseIpas: Record<string, readonly string[]>,
-  dialectRegexes: Map<string, readonly [RegExp, string][]>,
+  dialectRules: Record<string, Record<string, string[]>>,
 ): Indices {
   const key = JSON.stringify(selectedDialects.toSorted());
   const res = indexMap.get(key);
@@ -68,20 +54,15 @@ function getIndices(
     indexMap.delete(oldest);
   }
 
+  const substitute = buildSubstitution(selectedDialects, dialectRules);
   const wordToIpas = new Map<string, string[]>();
-  const ipaToWords = new Map<string, string[]>();
-  const ipaPrefix = new Trie<string>();
+  const ipaToWords = new TrieMap<string, string[]>();
   const ipaSuffix = new Trie<string>();
   for (const word in baseIpas) {
     const uniqIpas = new Set<string>();
-    for (let ipa of baseIpas[word]) {
-      // apply dialects
-      for (const dialect of selectedDialects) {
-        for (const [reg, rep] of dialectRegexes.get(dialect) ?? []) {
-          ipa = ipa.replaceAll(reg, rep);
-        }
-      }
-      uniqIpas.add(ipa);
+    for (const ipa of baseIpas[word]) {
+      // canonicalize so dialect-equivalent pronunciations collapse together
+      uniqIpas.add(substitute(ipa));
     }
     const ipas = [...uniqIpas];
     wordToIpas.set(word, ipas);
@@ -92,23 +73,41 @@ function getIndices(
       } else {
         ipaToWords.set(ipa, [word]);
       }
-      ipaPrefix.add(ipa);
       ipaSuffix.add([...ipa].reverse().join(""));
     }
   }
 
-  const indices = { wordToIpas, ipaToWords, ipaPrefix, ipaSuffix };
+  const indices = { wordToIpas, ipaToWords, ipaSuffix };
   indexMap.set(key, indices);
   return indices;
 }
 
 addEventListener("message", async (event: MessageEvent<Query>) => {
-  const { baseIpas, popularity, dialectRegexes } = await dataProm;
   const { dialects, query } = event.data;
-  const { wordToIpas, ipaToWords, ipaPrefix, ipaSuffix } = getIndices(
+  try {
+    await handleQuery(dialects, query);
+  } catch (err) {
+    // surface the failure so the UI can stop waiting instead of spinning forever
+    const result: Result = {
+      results: [],
+      ipa: "",
+      dialects,
+      query,
+      error: err instanceof Error ? err.message : String(err),
+    };
+    postMessage(result);
+  }
+});
+
+async function handleQuery(
+  dialects: readonly string[],
+  query: string,
+): Promise<void> {
+  const { baseIpas, popularity, dialectRules } = await dataProm;
+  const { wordToIpas, ipaToWords, ipaSuffix } = getIndices(
     dialects,
     baseIpas,
-    dialectRegexes,
+    dialectRules,
   );
 
   const res = new Map<string, EntryData>();
@@ -117,13 +116,12 @@ addEventListener("message", async (event: MessageEvent<Query>) => {
   const ipas = baseIpas[normed] ?? [];
   for (const ipa of found) {
     // prefix
-    for (const prefixed of ipaPrefix.find(ipa)) {
+    for (const [prefixed, words] of ipaToWords.find(ipa)) {
       // find valid words that match prefix
       const prefixWords = ipaToWords.get(prefixed.slice(ipa.length)) ?? [];
 
       // if such a prefix exists, set to the longer word too
       if (prefixWords.length) {
-        const words = ipaToWords.get(prefixed) ?? [];
         for (const longer of words) {
           // TODO maybe we could merge, but it seems like we don't care a ton
           res.set(longer, {
@@ -166,4 +164,4 @@ addEventListener("message", async (event: MessageEvent<Query>) => {
     .slice(0, MAX_RESULTS); // return at most MAX_RESULTS
   const result: Result = { results, ipa, dialects, query };
   postMessage(result);
-});
+}

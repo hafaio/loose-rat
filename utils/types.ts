@@ -13,4 +13,5 @@ export interface EntryData {
 export interface Result extends Query {
   results: EntryData[];
   ipa: string;
+  error?: string;
 }
