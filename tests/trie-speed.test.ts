@@ -4,7 +4,7 @@ import { MapDB, utf8ToBytes } from "@ethereumjs/util";
 import { Trie as Mnemonist } from "mnemonist";
 import TrieSearch from "trie-search";
 
-// Build-time comparison of trie libraries to justify the worker's use of mnemonist
+// build-time comparison of trie libraries to justify the worker's use of mnemonist
 describe("trie timing", async () => {
   const { word_to_ipas } = await Bun.file(
     "./components/loose_rat_inputs.json",
@@ -53,14 +53,14 @@ describe("trie timing", async () => {
     });
   });
 
-  // etherium is orders of magnitude slower here, so it needs far more than bun's 5s default
-  test("etherium", async () => {
+  // ethereum is orders of magnitude slower here, so it needs far more than bun's 5s default
+  test("ethereum", async () => {
     const trie = await Trie.create({ db: new MapDB() });
     const start = performance.now();
     for (const ipa of ipas) {
       const bytes = utf8ToBytes(ipa);
       await trie.put(bytes, bytes);
     }
-    console.log(`etherium: ${(performance.now() - start).toFixed(0)}ms`);
+    console.log(`ethereum: ${(performance.now() - start).toFixed(0)}ms`);
   }, 60000);
 });
