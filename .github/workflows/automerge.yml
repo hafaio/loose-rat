@@ -1,0 +1,28 @@
+name: automerge
+
+# Hangs off the build run rather than the pull request so that build.yml stays callable
+# from deploy.yml: a called workflow may only narrow the caller's permissions, and the
+# write scopes below would exceed what a Pages deploy grants.
+on:
+  workflow_run:
+    workflows: [build]
+    types: [completed]
+
+jobs:
+  merge:
+    if: github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.actor.login == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: write
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # nothing is checked out here, so gh has no remote to infer the repo from
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - run: gh pr merge --squash --match-head-commit "$HEAD_SHA" "$BRANCH"
+        env:
+          BRANCH: ${{ github.event.workflow_run.head_branch }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+      - run: gh workflow run nextjs.yml --ref main
